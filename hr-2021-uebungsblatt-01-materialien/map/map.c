@@ -52,8 +52,12 @@ void set_dir(int x, int y, cardd dir)
             map[ y ][ x ] = "S";
             break;
 
+        //
+        // TODO
+        //
+
         default:
-            // Suppress warning
+            // Suppress pesky warning
             break;
     }
 }
