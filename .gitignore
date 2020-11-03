@@ -50,5 +50,5 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
-/hr-2021-uebungsblatt-01-materialien/.idea/
 /.idea/
+/cmake-build-debug/
