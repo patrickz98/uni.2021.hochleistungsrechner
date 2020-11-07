@@ -1,0 +1,25 @@
+﻿Frage: Mit which können Sie sich den Pfad einer Anwendung anzeigen lassen. Warum funktioniert das nicht für das Kommando cd?(Tipp:man bash)
+
+
+Weil cd eine “Build-In” funktion ist. Es ist eine Funktion von /bin/bash.
+
+
+Frage: Was fällt Ihnen bezüglich der drei Größen auf?
+
+
+drwx------   2 zierahn hr-2021    3 Nov  6 12:19 archiv:
+Verzeichnisse haben keine Größe, es wird die anzahl an Dateien in dem Verzeichnis angezeigt (. und .. werden mitgezählt).
+
+
+-rw------- 1 zierahn hr-2021 256K Nov  6 12:19 archiv/zufall
+“archiv/zufall” ist genau 256K groß.
+
+
+-rw-------   1 zierahn hr-2021 260K Nov  6 12:20 archiv.tar
+Das tar.gz ist 4k größer als deren inhalt. Es werden Verzeichnisstrukturen mit gespeichert.
+
+
+Frage: Ist es möglich, ein gepacktes Archiv (.tar.gz) mit einem Aufruf von tar zu erzeugen? Wie hätte dieser Aufruf lauten müssen?
+
+
+tar -czvf archiv.tar.gz archiv
