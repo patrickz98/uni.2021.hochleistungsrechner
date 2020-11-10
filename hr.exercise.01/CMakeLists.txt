@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.17)
-project(hr-2021-uebungsblatt-01-materialien C)
+project(hr.exercise.01 C)
 
 set(CMAKE_C_STANDARD 99)
 
