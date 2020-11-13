@@ -14,7 +14,7 @@ int *mistake1(void)
 
 int *mistake2(void)
 {
-    int *buf = malloc(sizeof(char) * 4);
+    int *buf = malloc(sizeof(int) * 4);
     buf[1] = 2;
     return buf;
 }
