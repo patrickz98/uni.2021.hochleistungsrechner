@@ -1,0 +1,47 @@
+Breakpoint mistake1
+(gdb) b 9
+Breakpoint 1 at 0x400676: file simple.c, line 9.
+(gdb) print buf
+No symbol "buf" in current context.
+(gdb) run
+Starting program: /home/zierahn/uni.2021.hochleistungsrechner/hlr.exercise.02/simple/simple 
+
+Breakpoint 1, mistake1 () at simple.c:11
+11	    int buf[] = {1, 1, 2, 3, 4, 5};
+(gdb) print buf
+$1 = {-38648, 32767, 0, 0, 194, 0}
+(gdb) print buf[2]
+$2 = 0
+(gdb) s
+12	    return buf;
+(gdb) print buf
+$3 = {1, 1, 2, 3, 4, 5}
+(gdb) print buf[2]
+$4 = 2
+
+Breakpoint mistake2
+(gdb) b 19
+Breakpoint 2 at 0x7ffff7a78b10: file hooks.c, line 19.
+(gdb) run
+
+(gdb) ptype buf
+type = int *
+
+Welche Frames sind auf dem Stack?
+(gdb) b 50
+Breakpoint 1 at 0x400775: file simple.c, line 50.
+(gdb) run
+Starting program: /home/zierahn/uni.2021.hochleistungsrechner/hlr.exercise.02/simple/simple 
+
+Program received signal SIGSEGV, Segmentation fault.
+0x00000000004006e8 in mistake3 () at simple.c:27
+27	    buf[0] = 3;
+(gdb) frame 1
+#1  0x0000000000400751 in main () at simple.c:45
+45	        mistake3(),
+(gdb) 
+
+mistake4
+(gdb) call mistake4
+$1 = {int *(void)} 0x4006f4 <mistake4>
+
