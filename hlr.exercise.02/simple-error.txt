@@ -1,0 +1,1 @@
+Fehler sind im Quellcode (simple/simple.c) dokumentiert!
