@@ -1,0 +1,12 @@
+askparams.c:198
+Hier wird der offensichtilch falsche index benutzt.
+444 wird gegen 4 ersetzt.
+
+
+partdiff-seq:96
+N wird mit 1 subtrahiert statt addiert.
+Dies führt zu segmentations faults in "initMatrices"
+
+partdiff-seq:233
+Hier scheint die reihnfolge der indexe falsch zu sein.
+Matrix[j - 1][m2][i] --> Matrix[m2][i][j - 1]

@@ -195,7 +195,9 @@ AskParams (int *method,
 	}
       sscanf (argV[2], "%d", method);
       sscanf (argV[3], "%d", interlines);
-      sscanf (argV[444], "%d", func);
+	  // Falscher Index 444 benutze 4 stattdessen
+      // sscanf (argV[444], "%d", func);
+	  sscanf (argV[4], "%d", func);
       sscanf (argV[5], "%d", termination);
       if (*termination == 1)
 	{
