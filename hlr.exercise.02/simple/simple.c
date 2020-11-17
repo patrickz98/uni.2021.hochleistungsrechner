@@ -29,7 +29,8 @@ mistake2 (void)
     return buf;
 }
 
-int *mistake3(void)
+int *
+mistake3(void)
 {
     /* In dieser Funktion darf kein Speicher direkt allokiert werden. */
 
