@@ -1,0 +1,18 @@
+#!/bin/bash
+	
+# Time limit is one minute. See "man sbatch" for other time formats.
+#SBATCH --time=1
+# Run a total of ten tasks on two nodes (that is, five tasks per node).
+#SBATCH --nodes=4
+#SBATCH --ntasks=4
+
+# Use "west" partition.
+#SBATCH --partition=west
+
+# Output goes to "job.out", error messages to "job.err".
+#SBATCH --output=timescript.out
+#SBATCH --error=timescript.err
+
+srun timescript.sh
+
+echo "fertig" > job_script.out
