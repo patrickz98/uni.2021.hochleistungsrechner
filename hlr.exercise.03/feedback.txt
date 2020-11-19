@@ -14,5 +14,6 @@ Was war zu schwer oder unverständlich?
 
 Was könnten wir verbessern?
 Die Aufgaben Beschreibung war etwas lang.
+Keine Datei Namen mit *.out in der Abgabe verlangen. Diese führt zu .gitignore Problemen!
 
 Was hat Ihnen besonders gut gefallen?
