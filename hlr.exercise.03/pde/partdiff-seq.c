@@ -226,10 +226,14 @@ calculate (struct calculation_arguments* arguments, struct calculation_results *
 		/* over all rows */
 		for (i = 1; i < N; i++)
 		{
+            double* m1cache = Matrix[m1][i];
+            double* m2cache = Matrix[m2][i];
+
 			/* over all columns */
 			for (j = 1; j < N; j++)
 			{
-				star = -Matrix[m2][i-1][j] - Matrix[m2][i][j-1] - Matrix[m2][i][j+1] - Matrix[m2][i+1][j] + 4.0 * Matrix[m2][i][j];
+				// star = -Matrix[m2][i-1][j] - Matrix[m2][i][j-1] - Matrix[m2][i][j+1] - Matrix[m2][i+1][j] + 4.0 * Matrix[m2][i][j];
+				star = -(m2cache - 1)[j] - m2cache[j-1] - m2cache[j+1] - (m2cache + 1)[j] + 4.0 * m2cache[j];
 
 				// Not performence optimised code
 				// residuum = getResiduum(arguments, options, i, j, star);
@@ -251,7 +255,8 @@ calculate (struct calculation_arguments* arguments, struct calculation_results *
 				residuum = (residuum < 0) ? -residuum : residuum;
 				maxresiduum = (residuum < maxresiduum) ? maxresiduum : residuum;
 
-				Matrix[m1][i][j] = Matrix[m2][i][j] + korrektur;
+				// Matrix[m1][i][j] = Matrix[m2][i][j] + korrektur;
+				m1cache[j] = m2cache[j] + korrektur;
 			}
 		}
 

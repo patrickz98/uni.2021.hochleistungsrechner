@@ -30,7 +30,7 @@
 
 # Executables
 *.exe
-*.out
+#*.out
 *.app
 *.i*86
 *.x86_64
@@ -41,7 +41,8 @@
 *.su
 *.idb
 *.pdb
-*.err
+gmon.out
+#*.err
 
 # Kernel Module Compile Results
 *.mod*
