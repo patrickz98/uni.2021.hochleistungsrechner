@@ -226,6 +226,7 @@ calculate (struct calculation_arguments* arguments, struct calculation_results *
 		/* over all rows */
 		for (i = 1; i < N; i++)
 		{
+			// Cache Matrices to improve cache performance 
             double* m1cache = Matrix[m1][i];
             double* m2cache = Matrix[m2][i];
 
@@ -238,6 +239,9 @@ calculate (struct calculation_arguments* arguments, struct calculation_results *
 				// Not performence optimised code
 				// residuum = getResiduum(arguments, options, i, j, star);
 
+				//
+				// getResiduum
+				//
 				if (options->inf_func == FUNC_F0)
 				{
 					residuum = ((-star) / 4.0);
