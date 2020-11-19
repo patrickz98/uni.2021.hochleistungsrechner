@@ -224,14 +224,29 @@ calculate (struct calculation_arguments* arguments, struct calculation_results *
 		maxresiduum = 0;
 
 		/* over all rows */
-		for (j = 1; j < N; j++)
+		for (i = 1; i < N; i++)
 		{
 			/* over all columns */
-			for (i = 1; i < N; i++)
+			for (j = 1; j < N; j++)
 			{
 				star = -Matrix[m2][i-1][j] - Matrix[m2][i][j-1] - Matrix[m2][i][j+1] - Matrix[m2][i+1][j] + 4.0 * Matrix[m2][i][j];
 
-				residuum = getResiduum(arguments, options, i, j, star);
+				// Not performence optimised code
+				// residuum = getResiduum(arguments, options, i, j, star);
+
+				if (options->inf_func == FUNC_F0)
+				{
+					residuum = ((-star) / 4.0);
+				}
+				else
+				{
+					residuum = ((TWO_PI_SQUARE
+						* sin((double)(j) * PI * arguments->h)
+						* sin((double)(i) * PI * arguments->h)
+						* arguments->h * arguments->h - star)
+						/ 4.0);
+				}
+
 				korrektur = residuum;
 				residuum = (residuum < 0) ? -residuum : residuum;
 				maxresiduum = (residuum < maxresiduum) ? maxresiduum : residuum;
