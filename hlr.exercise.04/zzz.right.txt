@@ -6,14 +6,14 @@ Program for calculation of partial differential equations.
     Andreas C. Schmidt, TU München.
 ============================================================
 
-Berechnungszeit:    21.375706 s 
+Berechnungszeit:    38.941132 s 
 Speicherbedarf:     4.141861 MiB
 Berechnungsmethode: Jacobi
 Interlines:         64
 Stoerfunktion:      f(x,y) = 2pi^2*sin(pi*x)sin(pi*y)
 Terminierung:       Anzahl der Iterationen
 Anzahl Iterationen: 5120
-Norm des Fehlers:   1.601174e-05
+Norm des Fehlers:   1.662227e-05
 
 Matrix:
  0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000

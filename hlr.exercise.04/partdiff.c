@@ -27,6 +27,9 @@
 #include <malloc.h>
 #include <sys/time.h>
 
+// OpenMP
+#include <omp.h>
+
 #include "partdiff.h"
 
 struct calculation_arguments
@@ -222,9 +225,21 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 
 		maxResiduum = 0;
 
-		/* over all rows */
+		if (term_iteration % 100 == 0)
+		{
+			fprintf(stderr, "######### iteration: %d\n", term_iteration);
+		}
+
+		// if (term_iteration < 4800)
+		// {
+		// 	break;
+		// }
+
+		#pragma omp parallel for private(i, j, star, residuum) reduction(max:maxResiduum)
 		for (i = 1; i < N; i++)
 		{
+			// fprintf(stderr, "######### thread %d\n", omp_get_thread_num());
+
 			double fpisin_i = 0.0;
 
 			if (options->inf_func == FUNC_FPISIN)
@@ -232,7 +247,6 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 				fpisin_i = fpisin * sin(pih * (double)i);
 			}
 
-			/* over all columns */
 			for (j = 1; j < N; j++)
 			{
 				star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
