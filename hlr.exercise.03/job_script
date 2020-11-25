@@ -13,6 +13,6 @@
 #SBATCH --output=timescript.out
 #SBATCH --error=timescript.err
 
-srun timescript.sh
+srun ./timescript
 
 echo "fertig" > job_script.out
