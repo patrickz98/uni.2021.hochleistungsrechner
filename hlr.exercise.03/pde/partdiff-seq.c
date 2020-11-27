@@ -248,6 +248,7 @@ calculate (struct calculation_arguments* arguments, struct calculation_results *
 				}
 				else
 				{
+                    // TODO: Optimize this function (Pre. calc.)
 					residuum = ((TWO_PI_SQUARE
 						* sin((double)(j) * PI * arguments->h)
 						* sin((double)(i) * PI * arguments->h)
