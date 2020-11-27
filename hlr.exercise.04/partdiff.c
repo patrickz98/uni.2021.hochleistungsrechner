@@ -235,7 +235,7 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		// 	break;
 		// }
 
-		#pragma omp parallel for scheduling(guided) private(i, j, star, residuum) reduction(max:maxResiduum)
+		#pragma omp parallel for schedule(guided) private(i, j, star, residuum) reduction(max:maxResiduum)
 		for (i = 1; i < N; i++)
 		{
 			// fprintf(stderr, "######### thread %d\n", omp_get_thread_num());
