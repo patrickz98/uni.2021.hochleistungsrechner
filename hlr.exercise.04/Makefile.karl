@@ -6,7 +6,7 @@ CFLAGS = -std=c11 -pedantic -Wall -Wextra -O3 -ggdb -fopenmp -Wno-unused-functio
 LFLAGS = $(CFLAGS)
 LIBS   = -lm
 
-TGTS = partdiff partdiff_openmp partdiff_prows partdiff_pcol partdiff_pele
+TGTS = partdiff partdiff-openmp partdiff-openmp-zeile partdiff-openmp-spalte partdiff-openmp-element
 OBJS = partdiff.o askparams.o
 
 # Targets ...
@@ -20,16 +20,16 @@ partdiff.o:
 
 partdiff%.o: partdiff.c Makefile
 
-partdiff_openmp.o:
+partdiff-openmp.o:
 	$(CC) -c $(CFLAGS) partdiff.c -o $*.o -DOMP
 
-partdiff_prows.o:
+partdiff-openmp-zeile.o:
 	$(CC) -c $(CFLAGS) partdiff.c -o $*.o -DPROWS
 
-partdiff_pcol.o:
+partdiff-openmp-spalte.o:
 	$(CC) -c $(CFLAGS) partdiff.c -o $*.o -DPCOL
 
-partdiff_pele.o:
+partdiff-openmp-element.o:
 	$(CC) -c $(CFLAGS) partdiff.c -o $*.o -DPELE
 
 askparams.o: askparams.c Makefile

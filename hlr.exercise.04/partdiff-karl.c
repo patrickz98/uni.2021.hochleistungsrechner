@@ -202,12 +202,18 @@ calculate_openmp (struct calculation_arguments const* arguments, struct calculat
 	{
 		m1 = 0;
 		m2 = 1;
+		/*
+		Wir können nur das Jacobi-Verfahren ohne Datenabhängigkeiten parallelisieren, weshalb wir hier die (maximale) Anzahl der Threads auf den eingegebenen Wert setzen.
+		*/
 		omp_set_num_threads(options->number);
 	}
 	else
 	{
 		m1 = 0;
 		m2 = 0;
+                /*
+                Das Gauss-Verfahren kann nicht parallelisiert werden, weshalb wir hier die (maximale) Anzahl der Threads auf 1 setzen.
+                */
 		omp_set_num_threads(1);
 	}
 
@@ -223,8 +229,26 @@ calculate_openmp (struct calculation_arguments const* arguments, struct calculat
 		double** Matrix_In  = arguments->Matrix[m2];
 
 		maxResiduum = 0;
+		/*
+		Die durch openmp erstellten Threads teilen den i-Index untereinander auf, also die Zeilen der Matrix.
+		Wir wählen den schedule-Modus guided, um eine bessere Lastverteilung zu erreichen. Die (hier: minimale) chunk-Größe von 1 ist normalerweise der default-Wert, wir setzen ihn aber der Vollständigkeit halber.
+		Die Variablen i, j, star, residuum und maxResiduum werden von jedem Thread berechnet/verändert, weshalb wir sie auf private setzen.
+		Die Ausnahme hierbei bildet maxResiduum. Dieses soll das Maximum aller Threads sein, weshalb wir nach Beendung des parallelen Blocks das Maximum über die reduction(max:)-Klausel berechnen.
+		Die reduction-Klausel setzt außerdem die Variable maxResiduum implizit auf privat, weshalb wir es nicht in der private-Klausel haben.
+		Alle anderen Variablen sind per default als shared gesetzt, weshalb wir die Klausel hier nicht explizit verwenden müsen.
+		*/
+		//#pragma omp parallel for schedule(guided, 1) private(i, j, star, residuum) reduction(max:maxResiduum)
 
-		#pragma omp parallel for schedule(guided, 1) private(i, j, star, residuum) reduction(max:maxResiduum)
+		/*
+		Für den Vergleich der scheduling-Algorithmen (Bonus)
+		*/
+		#pragma omp parallel for schedule(dynamic, 1) private(i, j, star, residuum) reduction(max:maxResiduum)
+		//#pragma omp parallel for schedule(dynamic, 4) private(i, j, star, residuum) reduction(max:maxResiduum)
+
+		//#pragma omp parallel for schedule(static, 1) private(i, j, star, residuum) reduction(max:maxResiduum)
+		//#pragma omp parallel for schedule(static, 2) private(i, j, star, residuum) reduction(max:maxResiduum)
+		//#pragma omp parallel for schedule(static, 4) private(i, j, star, residuum) reduction(max:maxResiduum)
+		//#pragma omp parallel for schedule(static, 16) private(i, j, star, residuum) reduction(max:maxResiduum)
 
 		/* over all rows */
 		for (i = 1; i < N; i++)
@@ -239,7 +263,7 @@ calculate_openmp (struct calculation_arguments const* arguments, struct calculat
 			/* over all columns */
 			for (j = 1; j < N; j++)
 			{
-				//printf("Thread %d calculating %d|%d\n", omp_get_thread_num(), i, j);
+				//printf("Thread %d calculating %d|%d\n", omp_get_thread_num(), i, j); //Für debugging und testen
 				star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
 
 				if (options->inf_func == FUNC_FPISIN)
@@ -304,19 +328,25 @@ calculate_pcolumns (struct calculation_arguments const* arguments, struct calcul
 
 	int term_iteration = options->term_iteration;
 
-	/* initialize m1 and m2 depending on algorithm */
-	if (options->method == METH_JACOBI)
-	{
-		m1 = 0;
-		m2 = 1;
-		omp_set_num_threads(options->number);
-	}
-	else
-	{
-		m1 = 0;
-		m2 = 0;
-		omp_set_num_threads(1);
-	}
+        /* initialize m1 and m2 depending on algorithm */
+        if (options->method == METH_JACOBI)
+        {
+                m1 = 0;
+                m2 = 1;
+                /*
+                Wir können nur das Jacobi-Verfahren ohne Datenabhängigkeiten parallelisieren, weshalb wir hier die (maximale) Anzahl der Threads auf den eingegebenen Wert setzen.
+                */
+                omp_set_num_threads(options->number);
+        }
+        else
+        {
+                m1 = 0;
+                m2 = 0;
+                /*
+                Das Gauss-Verfahren kann nicht parallelisiert werden, weshalb wir hier die (maximale) Anzahl der Threads auf 1 setzen.
+                */
+                omp_set_num_threads(1);
+        }
 
 	if (options->inf_func == FUNC_FPISIN)
 	{
@@ -338,19 +368,27 @@ calculate_pcolumns (struct calculation_arguments const* arguments, struct calcul
 
 			if (options->inf_func == FUNC_FPISIN)
 			{
-				fpisin_i = fpisin * sin(pih * (double)j);
+				fpisin_i = fpisin * sin(pih * (double)j); /*Da wir j und i vertauscht haben, müssen wir hier j statt i für die Berechnung verwenden.*/
 			}
-	            #pragma omp parallel for schedule(guided, 1) private(i, star, residuum) reduction(max:maxResiduum)
+			/*
+	                Die durch openmp erstellten Threads teilen den i-Index untereinander auf. Da wir i und j in den Köpfen der for-loops vertauscht haben, teilen sie sich also die Spalten auf.
+	                Wir wählen den schedule-Modus guided, um eine bessere Lastverteilung zu erreichen. Die (hier: minimale) chunk-Größe von 1 ist normalerweise der default-Wert, wir setzen ihn aber der Vollständigkeit halber.
+	                Die Variablen i, star, residuum und maxResiduum werden von jedem Thread berechnet/verändert, weshalb wir sie auf private setzen.
+        	        Die Ausnahme hierbei bildet maxResiduum. Dieses soll das Maximum aller Threads sein, weshalb wir nach Beendung des parallelen Blocks das Maximum über die reduction(max:)-Klausel berechnen.
+	                Die reduction-Klausel setzt außerdem die Variable maxResiduum implizit auf privat, weshalb wir es nicht in der private-Klausel haben.
+			Alle anderen Variablen sind per default als shared gesetzt, weshalb wir die Klausel hier nicht explizit verwenden müsen.
+                	*/
+	                #pragma omp parallel for schedule(guided, 1) private(i, star, residuum) reduction(max:maxResiduum)
 
 			/* over all rows */
 			for (i = 1; i < N; i++)
 			{
-				//printf("Thread %d calculating %d|%d\n", omp_get_thread_num(), i, j);
+				//printf("Thread %d calculating %d|%d\n", omp_get_thread_num(), i, j); //Für debugging und testen.
 				star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
 
 				if (options->inf_func == FUNC_FPISIN)
 				{
-					star += fpisin_i * sin(pih * (double)i);
+					star += fpisin_i * sin(pih * (double)i); /*Da wir i und j vertauscht haben, müssen wir hier i statt j für die Berechnung verwenden.*/
 				}
 
 				if (options->termination == TERM_PREC || term_iteration == 1)
@@ -410,20 +448,25 @@ calculate_pelements (struct calculation_arguments const* arguments, struct calcu
 
 	int term_iteration = options->term_iteration;
 
-	/* initialize m1 and m2 depending on algorithm */
-	if (options->method == METH_JACOBI)
-	{
-		m1 = 0;
-		m2 = 1;
-		omp_set_num_threads(options->number);
-		omp_set_nested(1);
-	}
-	else
-	{
-		m1 = 0;
-		m2 = 0;
-		omp_set_num_threads(1);
-	}
+        /* initialize m1 and m2 depending on algorithm */
+        if (options->method == METH_JACOBI)
+        {
+                m1 = 0;
+                m2 = 1;
+                /*
+                Wir können nur das Jacobi-Verfahren ohne Datenabhängigkeiten parallelisieren, weshalb wir hier die (maximale) Anzahl der Threads auf den eingegebenen Wert setzen.
+                */
+                omp_set_num_threads(options->number);
+        }
+        else
+        {
+                m1 = 0;
+                m2 = 0;
+                /*
+                Das Gauss-Verfahren kann nicht parallelisiert werden, weshalb wir hier die (maximale) Anzahl der Threads auf 1 setzen.
+                */
+                omp_set_num_threads(1);
+        }
 
 	if (options->inf_func == FUNC_FPISIN)
 	{
@@ -438,7 +481,6 @@ calculate_pelements (struct calculation_arguments const* arguments, struct calcu
 
 		maxResiduum = 0;
 
-	//#pragma omp parallel for schedule(dynamic, 1) private(i, j, star, residuum) reduction(max:maxResiduum)
 		/* over all columns */
 		for (i = 1; i < N; i++)
 		{
@@ -449,11 +491,33 @@ calculate_pelements (struct calculation_arguments const* arguments, struct calcu
 				fpisin_i = fpisin * sin(pih * (double)i);
 			}
 
-			#pragma omp parallel for schedule(static, 1) private(j, star, residuum) reduction(max:maxResiduum)
+			/*
+                        Die durch openmp erstellten Threads teilen den j-Index untereinander auf, also die Spalten der Matrix. Da alle Threads ein gemeinsames i haben, also an der gleichen Zeile arbeiten,
+			teilen sie sich damit die Elemente der Matrix auf.
+                        Wir wählen den schedule-Modus static und eine chunk-Größe von 1. Dadurch bekommt jeder Thread genau einen j-Wert für die Berechnung, also genau ein Element.
+			Dadurch wird jedes Element von einem anderen Thread berechnet.
+                        Die Variablen i, star, residuum und maxResiduum werden von jedem Thread berechnet/verändert, weshalb wir sie auf private setzen.
+                        Die Ausnahme hierbei bildet maxResiduum. Dieses soll das Maximum aller Threads sein, weshalb wir nach Beendung des parallelen Blocks das Maximum über die reduction(max:)-Klausel berechnen.
+                        Die reduction-Klausel setzt außerdem die Variable maxResiduum implizit auf privat, weshalb wir es nicht in der private-Klausel haben.
+                        Alle anderen Variablen sind per default als shared gesetzt, weshalb wir die Klausel hier nicht explizit verwenden müsen.
+                        */
+			//#pragma omp parallel for schedule(guided, 1) private(j, star, residuum) reduction(max:maxResiduum)
+
+	                /*
+	                Für den Vergleich der scheduling-Algorithmen (Bonus)
+                	*/
+        	        #pragma omp parallel for schedule(dynamic, 1) private(j, star, residuum) reduction(max:maxResiduum)
+	                //#pragma omp parallel for schedule(dynamic, 4) private(j, star, residuum) reduction(max:maxResiduum)
+
+	                //#pragma omp parallel for schedule(static, 1) private(j, star, residuum) reduction(max:maxResiduum)
+                	//#pragma omp parallel for schedule(static, 2) private(j, star, residuum) reduction(max:maxResiduum)
+        	        //#pragma omp parallel for schedule(static, 4) private(j, star, residuum) reduction(max:maxResiduum)
+	                //#pragma omp parallel for schedule(static, 16) private(j, star, residuum) reduction(max:maxResiduum)
+
 			/* over all rows */
 			for (j = 1; j < N; j++)
 			{
-                		//printf("Thread %d is calculating %d|%d\n", omp_get_thread_num(), i, j);
+                		//printf("Thread %d is calculating %d|%d\n", omp_get_thread_num(), i, j); //Für debugging und testen
 
 				star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
 
@@ -707,15 +771,15 @@ main (int argc, char** argv)
 	initMatrices(&arguments, &options);
 
 	gettimeofday(&start_time, NULL);
-#if defined(OMP)
+#if defined(OMP) //Falls die -DOMP Flag gesetzt wurde, kompiliere mit dieser Funktion
 	calculate_openmp(&arguments, &results, &options);
-#elif defined(PROWS)
+#elif defined(PROWS) //Falls die -DPROWS Flag gesetzt wurde, kompiliere mit dieser Funktion
     calculate_openmp(&arguments, &results, &options);
-#elif defined(PCOL)
+#elif defined(PCOL) //Falls die -DPCOL Flag gesetzt wurde, kompiliere mit dieser Funktion
     calculate_pcolumns(&arguments, &results, &options);
-#elif defined(PELE)
+#elif defined(PELE) //Falls die -DPELE Flag gesetzt wurde, kompiliere mit dieser Funktion
     calculate_pelements(&arguments, &results, &options);
-#else
+#else //Falls keine der -D Flags gesetzt wurde, kompiliere mit der unveränderten calculate-Funktion
     calculate(&arguments, &results, &options);
 #endif
 	gettimeofday(&comp_time, NULL);
