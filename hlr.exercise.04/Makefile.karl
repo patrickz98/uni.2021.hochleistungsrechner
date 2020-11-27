@@ -1,0 +1,44 @@
+# Common definitions
+CC = gcc
+
+# Compiler flags, paths and libraries
+CFLAGS = -std=c11 -pedantic -Wall -Wextra -O3 -ggdb -fopenmp -Wno-unused-function
+LFLAGS = $(CFLAGS)
+LIBS   = -lm
+
+TGTS = partdiff partdiff_openmp partdiff_prows partdiff_pcol partdiff_pele
+OBJS = partdiff.o askparams.o
+
+# Targets ...
+all: $(TGTS)
+
+%: %.o askparams.o Makefile
+	$(CC) $(LFLAGS) -o $@ $*.o askparams.o $(LIBS)
+
+partdiff.o:
+	$(CC) -c $(CFLAGS) partdiff.c -o $*.o
+
+partdiff%.o: partdiff.c Makefile
+
+partdiff_openmp.o:
+	$(CC) -c $(CFLAGS) partdiff.c -o $*.o -DOMP
+
+partdiff_prows.o:
+	$(CC) -c $(CFLAGS) partdiff.c -o $*.o -DPROWS
+
+partdiff_pcol.o:
+	$(CC) -c $(CFLAGS) partdiff.c -o $*.o -DPCOL
+
+partdiff_pele.o:
+	$(CC) -c $(CFLAGS) partdiff.c -o $*.o -DPELE
+
+askparams.o: askparams.c Makefile
+
+# Rule to create *.o from *.c
+%.o: %.c
+	$(CC) -c $(CFLAGS) $*.c
+
+clean:
+	$(RM) $(OBJS)
+	$(RM) $(TGTS)
+	$(RM) *.o
