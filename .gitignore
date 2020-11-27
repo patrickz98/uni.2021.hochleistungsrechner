@@ -58,3 +58,4 @@ dkms.conf
 *Zierahn*.tar.gz
 .DS_Store
 partdiff
+partdiff-openmp

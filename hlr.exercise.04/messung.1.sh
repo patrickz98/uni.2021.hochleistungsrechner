@@ -1,11 +1,15 @@
 #!/bin/bash
 
-mkdir -p messung.1;
+messung=messung.1
+mkdir -p $messung;
 
 iterations=600
 
-for inx in `seq 1 12`
+for iter in `seq 0 2`
 do
-    echo "Messung mit '$inx' threads"
-    OMP_NUM_THREADS=$inx ./partdiff 1 2 512 2 2 $iterations > messung.1/messung.1.threads-$inx.txt
+    for inx in `seq 1 12`
+    do
+        echo "Messung mit '$inx' threads"
+        OMP_NUM_THREADS=$inx ./partdiff-openmp 1 2 512 2 2 $iterations > $messung/$messung.$iter.threads-$inx.txt
+    done
 done
