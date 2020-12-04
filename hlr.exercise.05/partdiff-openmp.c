@@ -26,7 +26,9 @@
 #include <math.h>
 #include <malloc.h>
 #include <sys/time.h>
-#include <pthread.h>
+
+// OpenMP
+#include <omp.h>
 
 #include "partdiff.h"
 
@@ -38,8 +40,6 @@ struct calculation_arguments
 	double    ***Matrix;      /* index matrix used for addressing M             */
 	double    *M;             /* two matrices with real values                  */
 };
-
-typedef enum {false, true} bool;
 
 struct calculation_results
 {
@@ -56,25 +56,6 @@ struct calculation_results
 struct timeval start_time; /* time when program started                      */
 struct timeval comp_time;  /* time when calculation completed                */
 
-// Mutex für parallele Verarbeitung
-pthread_mutex_t mutex_maxResiduum;
-
-// maxResiduum ist jetzt global, damit alle Threads darauf zugreifen können
-double maxResiduum;
-
-/*struct um Threads Variablen zu übergeben*/
-struct thread_variables
-{
-    int id;
-    int start_index, end_index; //Indizes für äußere loop
-    int N; //Anzahl Elemente einer Zeile der Matrix, für innere loop
-    double** Matrix_In;
-    double** Matrix_Out;
-    bool res; //um if-Abfragen zu beschleunigen
-    bool func; //um if-Abfragen zu beschleunigen
-    double pih;
-	double fpisin;
-};
 
 /* ************************************************************************ */
 /* initVariables: Initializes some global variables                         */
@@ -198,67 +179,6 @@ initMatrices (struct calculation_arguments* arguments, struct options const* opt
 	}
 }
 
-static
-void*
-for_loops(void* t_var_array)
-{
-    struct thread_variables* vars = (struct thread_variables*) t_var_array;
-
-    double residuum = 0.0;
-    double mResiduum = 0.0;
-    double star;
-
-    /* over all rows */
-    for (int i = vars->start_index; i < vars->end_index; i++)
-	{
-		// fprintf(stderr, "######### [%d] i = %d\n", vars->id, i);
-
-		double fpisin_i = 0.0;
-
-		if (vars->func)
-		{
-			fpisin_i = vars->fpisin * sin(vars->pih * (double)i);
-		}
-
-		/* over all columns */
-		for (int j = 1; j < vars->N; j++)
-		{
-			star = 0.25 * (vars->Matrix_In[i-1][j]
-				+ vars->Matrix_In[i][j-1]
-				+ vars->Matrix_In[i][j+1]
-				+ vars->Matrix_In[i+1][j]);
-
-			if (vars->func)
-			{
-				star += fpisin_i * sin(vars->pih * (double)j);
-			}
-
-			if (vars->res)
-			{
-				residuum = vars->Matrix_In[i][j] - star;
-				residuum = (residuum < 0) ? -residuum : residuum;
-                mResiduum = (residuum < mResiduum) ? mResiduum : residuum;
-			}
-
-			vars->Matrix_Out[i][j] = star;
-		}
-	}
-
-	if (vars->res)
-    {
-        // Versuche lock auf maxResiduum zu erhalten
-        pthread_mutex_lock(&mutex_maxResiduum);
-
-        // Verändere maxResiduum
-        maxResiduum = (mResiduum < maxResiduum) ? maxResiduum : mResiduum;
-
-        // Gebe lock auf maxResiduum frei
-        pthread_mutex_unlock(&mutex_maxResiduum);
-    }
-
-	pthread_exit((void*) t_var_array);
-}
-
 /* ************************************************************************ */
 /* calculate: solves the equation                                           */
 /* ************************************************************************ */
@@ -266,29 +186,14 @@ static
 void
 calculate (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
 {
-	// used as indices for old and new matrices
-	int m1, m2;
-
-	// Für die Ausgabe des Fehlercodes, sollte einer auftreten. Für debugging
-	int rc;
-
-	// Array mit allen Threads
-    pthread_t my_threads[options->number];
-    
-	// Wir kreieren die Threads explizit als joinable,
-	// um Fehler aufgrund Umgebungsvariablen zu vermeiden
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-
-    /*Wir initialisieren die Mutex-Variable*/
-    pthread_mutex_init(&mutex_maxResiduum, NULL);
+	int i, j;           /* local variables for loops */
+	int m1, m2;         /* used as indices for old and new matrices */
+	double star;        /* four times center value minus 4 neigh.b values */
+	double residuum;    /* residuum of current iteration */
+	double maxResiduum; /* maximum residuum value of a slave in iteration */
 
 	int const N = arguments->N;
 	double const h = arguments->h;
-
-	//Wir speichern das Ergebnis als boolean, um in den verschachtelten for-loops nicht immer die gleiche Abfrage starten zu müssen
-	bool func = options->inf_func == FUNC_FPISIN;
 
 	double pih = 0.0;
 	double fpisin = 0.0;
@@ -313,95 +218,64 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
 	}
 
-	// Für die Berechnung der zu bearbeitenden Indizes der jeweiligen Threads
-	int chunk = N / options->number;
-
-	// For-loop counter variable
-	unsigned int inx = 0;
-
-	// This thread is needed to store thread variables.
-    struct thread_variables t_var_array[options->number];
-
 	while (term_iteration > 0)
 	{
+		double** Matrix_Out = arguments->Matrix[m1];
+		double** Matrix_In  = arguments->Matrix[m2];
+
+		maxResiduum = 0;
+
 		if (term_iteration % 100 == 0)
 		{
 			fprintf(stderr, "######### iteration: %d\n", term_iteration);
 		}
 
-		double** Matrix_Out = arguments->Matrix[m1];
-		double** Matrix_In  = arguments->Matrix[m2];
+		// if (term_iteration < 4800)
+		// {
+		// 	break;
+		// }
 
-		maxResiduum = 0.0;
+		#pragma omp parallel for schedule(guided) private(i, j, star, residuum) reduction(max:maxResiduum)
+		for (i = 1; i < N; i++)
+		{
+			// fprintf(stderr, "######### [%d] => %d\n", omp_get_thread_num(), i);
 
-		// Wir speichern das Ergebnis als boolean,
-		// um in den verschachtelten for-loops nicht
-		// immer die gleiche Abfrage starten zu müssen	
-		bool res = false;
-		if (options->termination == TERM_PREC || term_iteration == 1)
-        {
-            res = true;
-        }
+			double fpisin_i = 0.0;
 
-		// fprintf(stderr, "######### N: %d\n", N);
-		// fprintf(stderr, "######### chunk: %d\n", chunk);
-		// fprintf(stderr, "######### threads: %d\n", options->number);
+			if (options->inf_func == FUNC_FPISIN)
+			{
+				fpisin_i = fpisin * sin(pih * (double)i);
+			}
 
-		// Create Threads
-		for (inx = 0; inx < options->number; inx++)
-        {
-			unsigned int end_index = (inx == (options->number - 1))
-				? (unsigned int) N
-				: ((inx + 1) * chunk) + 1;
+			for (j = 1; j < N; j++)
+			{
+				star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
 
-			// Initialisierung der Variablen
-			struct thread_variables vars = {
-				.N           = N,
-				.start_index = (inx * chunk) + 1,
-				.end_index   = end_index,
-				.Matrix_In   = Matrix_In,
-				.Matrix_Out  = Matrix_Out,
-				.res         = res,
-				.func        = func,
-				.fpisin      = fpisin,
-				.pih         = pih,
-				.id          = inx,
-			};
+				if (options->inf_func == FUNC_FPISIN)
+				{
+					star += fpisin_i * sin(pih * (double)j);
+				}
 
-			t_var_array[inx] = vars;
+				if (options->termination == TERM_PREC || term_iteration == 1)
+				{
+					residuum = Matrix_In[i][j] - star;
+					residuum = (residuum < 0) ? -residuum : residuum;
+					maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
+				}
 
-			// fprintf(stderr, "######### [%d] start_index: %4d\n", inx, vars.start_index);
-			// fprintf(stderr, "######### [%d] end_index:   %4d\n", inx, vars.end_index);
-
-			rc = pthread_create(&my_threads[inx], &attr, for_loops, (void*) &t_var_array[inx]);
-            if (rc)
-            {
-                fprintf(stderr, "ERROR: [%d] return code from pthread_create() is %d\n", inx, rc);
-                exit(-1);
-            }
-        }
+				Matrix_Out[i][j] = star;
+			}
+		}
 
 		// exit(0);
-
-        // Wir führen die Threads zusammen, um sicher zu sein dass alle Threads fertig sind.
-		// Andernfalls kann es zu Datenabhängigkeiten kommen
-        for (inx = 0; inx < options->number; inx++)
-        {
-            rc = pthread_join(my_threads[inx], (void*) NULL);
-            if (rc)
-            {
-                fprintf(stderr, "ERROR: [%d] return code from pthread_join() is %d\n", inx, rc);
-                exit(-1);
-            }
-        }
 
 		results->stat_iteration++;
 		results->stat_precision = maxResiduum;
 
 		/* exchange m1 and m2 */
-		int inx = m1;
+		i = m1;
 		m1 = m2;
-		m2 = inx;
+		m2 = i;
 
 		/* check for stopping calculation depending on termination method */
 		if (options->termination == TERM_PREC)
@@ -417,9 +291,6 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		}
 	}
 
-	/*Wir geben das Attribut und die Mutex wieder frei*/
-	pthread_attr_destroy(&attr);
-    pthread_mutex_destroy(&mutex_maxResiduum);
 	results->m = m2;
 }
 

@@ -17,6 +17,8 @@ partdiff: $(OBJS) Makefile
 
 partdiff.o: partdiff.c Makefile
 
+partdiff-openmp.o: partdiff-openmp.c Makefile
+
 askparams.o: askparams.c Makefile
 
 # Rule to create *.o from *.c
@@ -26,6 +28,14 @@ askparams.o: askparams.c Makefile
 clean:
 	$(RM) $(OBJS)
 	$(RM) $(TGTS)
+	$(RM) partdiff-openmp
+
+openmp: partdiff-openmp.o askparams.o
+	$(CC) $(LFLAGS) -o partdiff-openmp partdiff-openmp.o askparams.o $(LIBS)
 
 run: clean all
-	./partdiff-posix 1 2 512 2 2 10240 > zzz.out.512.10240.txt
+	# OMP_NUM_THREADS=12
+	# ./partdiff-openmp 12 2 64 2 2 5120 > zzz.openmp.txt
+	./partdiff-posix 12 2 64 2 2 5120 > zzz.posix.txt
+	# ./partdiff-posix 12 2 64 2 2 100 > zzz.posix.100.txt
+	# ./partdiff-posix 12 2 64 2 2 2 > zzz.posix.2.txt
