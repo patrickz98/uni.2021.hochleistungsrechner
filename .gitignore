@@ -61,3 +61,5 @@ partdiff
 partdiff-openmp
 partdiff-posix
 partdiff-schedule
+timempi
+timempi2
