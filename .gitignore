@@ -60,3 +60,4 @@ dkms.conf
 partdiff
 partdiff-openmp
 partdiff-posix
+partdiff-schedule

@@ -27,35 +27,40 @@ int main()
     // Threads 1 bis n sollen bestimmte Anweisungen ausführen
     if (world_rank != 0)
     {
-        // Zum Abspeichern der Mikrosekunden seit der letzten vollen Sekunde
-        struct timeval current_time;
+        //
+        // 1. Wir senden den Hostnamen.
+        //
 
-        // Wir speichern die lokale Zeit als String im Format Jahr-Monat-Tag Stunde-Minute-Sekunde
-        time_t now = time(NULL) ;
-        struct tm tm_now ;
+        MPI_Send((void*) processor_name, name_len, MPI_CHAR, 0, 1, MPI_COMM_WORLD);
+
+        //
+        // 2. Wir senden die lokale Zeit als String.
+        //
+
+        // Wir speichern die lokale Zeit als String
+        // im Format Jahr-Monat-Tag Stunde-Minute-Sekunde
+        time_t now = time(NULL);
+        struct tm tm_now;
 
         // Wir messen die Zeit bis auf die Sekunde genau
         localtime_r(&now, &tm_now);
-
-        gettimeofday(&current_time, NULL);
-
-        // Wir messen die Zeit bis auf die Mikrosekunde genau
-        int microsec = current_time.tv_usec;
 
         // Wir speichern die Zeit als String
         char time_string[100];
         strftime(time_string, sizeof(time_string), "%Y-%m-%d %H:%M:%S", &tm_now);
 
-        // Wir senden den Hostnamen.
-        MPI_Send((void*) processor_name, name_len, MPI_CHAR, 0, 1, MPI_COMM_WORLD);
-
-        // Wir senden die lokale Zeit als String
         MPI_Send((void*) time_string, 100, MPI_CHAR, 0, 2, MPI_COMM_WORLD);
 
-        // Wir senden die Mikrosekunden
-        MPI_Send((void*) &microsec, 1, MPI_INT, 0, 3, MPI_COMM_WORLD);
+        // 
+        // 3. Wir senden die Mikrosekunden
+        //
 
-        //printf("sent from %d: %s\n", world_rank, processor_name);
+        // Zum Abspeichern der Mikrosekunden seit der letzten vollen Sekunde
+        struct timeval current_time;
+        gettimeofday(&current_time, NULL);
+        int microsec = current_time.tv_usec;
+
+        MPI_Send((void*) &microsec, 1, MPI_INT, 0, 3, MPI_COMM_WORLD);
     }
     else
     {
@@ -70,16 +75,22 @@ int main()
 
         for (int inx = 1; inx < world_size; inx++)
         {
+            //
+            // 1. Wir lesen den Hostnamen aus und speichern ihn im Array
+            //
+
             // Wir nutzen MPI_Probe um die Größe der Nachricht abzuschätzen
             MPI_Probe(inx, 1, MPI_COMM_WORLD, &status);
 
             int length_name;
             MPI_Get_count(&status, MPI_CHAR, &length_name);
             char* buf_name = malloc(sizeof(char) * length_name);
-
-            // Wir lesen den Hostnamen aus und speichern ihn im Array
             MPI_Recv(buf_name, length_name, MPI_CHAR, inx, 1, MPI_COMM_WORLD, &status);
             hostname[inx] = buf_name;
+
+            //
+            // 2. Wir lesen den Timestamp aus und speichern ihn im Array
+            //
 
             // Wir nutzen MPI_Probe um die Größe der Nachricht abzuschätzen
             MPI_Probe(inx, 2, MPI_COMM_WORLD, &status);
@@ -88,22 +99,23 @@ int main()
             MPI_Get_count(&status, MPI_CHAR, &length_time);
             char* buf_time = malloc(sizeof(char) * length_time);
 
-            // Wir lesen den Timestamp aus und speichern ihn im Array
             MPI_Recv(buf_time, length_time, MPI_CHAR, inx, 2, MPI_COMM_WORLD, &status);
             time_string[inx] = buf_time;
 
-            // Wir lesen die Mikrosekunden aus und speichern sie im Array
-            MPI_Recv(&microsec[i], 1, MPI_INT, i, 3, MPI_COMM_WORLD, &status);
+            //
+            // 3. Wir lesen die Mikrosekunden aus und speichern sie im Array
+            //
+            
+            MPI_Recv(&microsec[inx], 1, MPI_INT, inx, 3, MPI_COMM_WORLD, &status);
         }
 
         // Für einen einzelnen Thread brauchen wir keine Ausgabe
         if (world_size > 1)
         {
-            for (int i = 1; i < world_size; i++)
+            for (int inx = 1; inx < world_size; inx++)
             {
                 // Thread 0 fängt mit der Ausgabe an
-                //printf("recieved from thread %d:\n", i);
-                printf("%s : %s:%d\n", hostname[i], time_string[i], microsec[i]); //
+                printf("%s: %s.%d\n", hostname[inx], time_string[inx], microsec[inx]);
             }
         }
     }
@@ -114,6 +126,7 @@ int main()
     // DIREKT vor dem Beenden kommt die exit-Ausgabe. Aufgabenstellung war etwas unklar,
     // ob die Barriere vielleicht nach dieser Ausgabe erfolgen sollte.
     printf("Rang %d beendet jetzt!\n", world_rank);
+
     // Finalize the MPI environment.
     MPI_Finalize();
 }

@@ -19,6 +19,8 @@ partdiff.o: partdiff.c Makefile
 
 partdiff-openmp.o: partdiff-openmp.c Makefile
 
+partdiff-schedule.o: partdiff-schedule.c Makefile
+
 askparams.o: askparams.c Makefile
 
 # Rule to create *.o from *.c
@@ -33,9 +35,13 @@ clean:
 openmp: partdiff-openmp.o askparams.o
 	$(CC) $(LFLAGS) -o partdiff-openmp partdiff-openmp.o askparams.o $(LIBS)
 
+schedule: partdiff-schedule.o askparams.o
+	$(CC) $(LFLAGS) -o partdiff-schedule partdiff-schedule.o askparams.o $(LIBS)
+
 run: clean all
 	# OMP_NUM_THREADS=12
 	# ./partdiff-openmp 12 2 64 2 2 5120 > zzz.openmp.txt
-	./partdiff-posix 12 2 64 2 2 5120 > zzz.posix.txt
+	# ./partdiff-posix 12 2 64 2 2 5120 > zzz.posix.txt
 	# ./partdiff-posix 12 2 64 2 2 100 > zzz.posix.100.txt
 	# ./partdiff-posix 12 2 64 2 2 2 > zzz.posix.2.txt
+	./partdiff-schedule 12 2 64 2 2 100 > zzz.schedule.100.txt

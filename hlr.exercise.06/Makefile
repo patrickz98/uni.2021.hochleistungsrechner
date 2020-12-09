@@ -3,7 +3,7 @@ CFLAGS = -pedantic -Wall -Wextra -Wno-unused-function -g
 
 TGTS = timempi timempi2
 
-all: $(TGTS)
+all: clean $(TGTS)
 
 timempi : timempi.o Makefile
 	$(CC) $(CFLAGS) -o $@ timempi.o
