@@ -119,6 +119,7 @@ int main()
             }
 
             // Wir suchen die kleinste Anzahl an Mikrosekunden
+            // MPI_Reduce()
             int min = INT_MAX;
             for (int inx = 1; inx < world_size; inx++)
             {

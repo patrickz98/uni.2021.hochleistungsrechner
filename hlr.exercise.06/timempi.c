@@ -24,9 +24,12 @@ int main()
 
     MPI_Status status;
 
-    // Threads 1 bis n sollen bestimmte Anweisungen ausführen
     if (world_rank != 0)
     {
+        //
+        // Anweisungen für Threads 1 bis n
+        //
+
         //
         // 1. Wir senden den Hostnamen.
         //
@@ -80,10 +83,13 @@ int main()
             //
 
             // Wir nutzen MPI_Probe um die Größe der Nachricht abzuschätzen
+            // Teuer => Feste Größe
+            // iProbe?
             MPI_Probe(inx, 1, MPI_COMM_WORLD, &status);
 
             int length_name;
             MPI_Get_count(&status, MPI_CHAR, &length_name);
+
             char* buf_name = malloc(sizeof(char) * length_name);
             MPI_Recv(buf_name, length_name, MPI_CHAR, inx, 1, MPI_COMM_WORLD, &status);
             hostname[inx] = buf_name;
@@ -114,14 +120,15 @@ int main()
         {
             for (int inx = 1; inx < world_size; inx++)
             {
-                // Thread 0 fängt mit der Ausgabe an
                 printf("%s: %s.%d\n", hostname[inx], time_string[inx], microsec[inx]);
             }
         }
     }
 
-    // Jeder Threads warten hier, bis alle Threads an dieser Stelle angekommen sind. Erst dann werden die Threads beendet.
+    // Jeder Threads warten hier, bis alle Threads an dieser Stelle angekommen sind.
+    // Erst dann werden die Threads beendet.
     MPI_Barrier(MPI_COMM_WORLD);
+    // MPI_Gether??
 
     // DIREKT vor dem Beenden kommt die exit-Ausgabe. Aufgabenstellung war etwas unklar,
     // ob die Barriere vielleicht nach dieser Ausgabe erfolgen sollte.
