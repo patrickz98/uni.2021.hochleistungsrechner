@@ -17,4 +17,4 @@ clean:
 	rm -f *~
 
 run: all
-	mpirun -n 8 ./circle 4
+	mpirun -n 4 ./circle 17

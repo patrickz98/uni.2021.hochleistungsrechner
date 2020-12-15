@@ -9,38 +9,25 @@
 #define TAG_SEND_NUMBERS 1
 #define TAG_EXIT         2
 #define TAG_NUMBER_COUNT 3
+#define TAG_PRINT_SYNC   4
 
-int main(int argc, char* argv[])
+void circle(int num)
 {
-    //
-    // Arg parsing shit
-    //
-
-    if (argc != 2)
-    {
-        fprintf(stderr, "Only one parameter!\n");
-        return -1;
-    }
-
-    int num = atoi(argv[1]);
-    // printf("N=%d\n", num);
-
     //
     // MPI setup
     //
 
     MPI_Init(NULL, NULL);
 
+    MPI_Status status;
+
     int processes;
     MPI_Comm_size(MPI_COMM_WORLD, &processes);
 
     int process;
     MPI_Comm_rank(MPI_COMM_WORLD, &process);
-
-    // Init random with seed
-    // srand(time(NULL));
-    srand(28051998 * process);
     
+    // We set are static buffer size across all process
     int bufferSize = (num / processes);
     int overflow   = (num % processes);
 
@@ -58,11 +45,16 @@ int main(int argc, char* argv[])
 
     int numbers[bufferSize];
 
+    // Init "random" with seed
+    srand(28051998 * process);
+
     for (int inx = 0; inx < bufferSize; inx++)
     {
+        // Fill numbers array with random numbers
+        // The -1 signals overflow
         numbers[ inx ] = (inx < numberCount)
             ? rand() % 25
-            : 0;
+            : -1;
     }
 
     for (int inx = 0; inx < numberCount; inx++)
@@ -73,8 +65,6 @@ int main(int argc, char* argv[])
     //
     // MPI Stuff
     //
-
-    MPI_Status status;
 
     if (process == 0)
     {
@@ -101,10 +91,7 @@ int main(int argc, char* argv[])
         printf("[ %d ] --> Recv: %d\n", process, stopNumber);
     }
 
-    // Process source nummber
-    int source = (process + processes - 1) % processes;
-
-    // Process destination nummber
+    int source      = (process + processes - 1) % processes;
     int destination = (process + processes + 1) % processes;
 
     // printf("[ %d ] --> source: %d, destination: %d\n", process, source, destination);
@@ -114,10 +101,7 @@ int main(int argc, char* argv[])
     while (exit == 0)
     {
         MPI_Send((void*) &numbers, bufferSize, MPI_INT, destination, TAG_SEND_NUMBERS, MPI_COMM_WORLD);
-        MPI_Send((void*) &numberCount, 1, MPI_INT, destination, TAG_NUMBER_COUNT, MPI_COMM_WORLD);
-
-        MPI_Recv(&numbers, bufferSize, MPI_INT, source, TAG_SEND_NUMBERS, MPI_COMM_WORLD, &status);
-        MPI_Recv(&numberCount, 1, MPI_INT, source, TAG_NUMBER_COUNT, MPI_COMM_WORLD, &status);
+        MPI_Recv(        &numbers, bufferSize, MPI_INT,      source, TAG_SEND_NUMBERS, MPI_COMM_WORLD, &status);
 
         if (isProc0)
         {
@@ -127,12 +111,33 @@ int main(int argc, char* argv[])
         MPI_Bcast((void*) &exit, 1, MPI_INT, brodcastRoot, MPI_COMM_WORLD);
     }
 
-    for (int inx = 0; inx < numberCount; inx++)
+    for (int inx = 0; inx < bufferSize; inx++)
     {
-        printf("[ %d ] --> final: numbers[ %d ] = %d\n", process, inx, numbers[ inx ]);
+        int number = numbers[ inx ];
+        if (number >= 0)
+        {
+            printf("[ %d ] --> final: numbers[ %d ] = %d\n", process, inx, number);
+        }
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
-    printf("[ %d ] --> Process exit!\n", process);
     MPI_Finalize();
+}
+
+int main(int argc, char* argv[])
+{
+    //
+    // Arg parsing shit
+    //
+
+    if (argc != 2)
+    {
+        fprintf(stderr, "Only one parameter!\n");
+        return -1;
+    }
+
+    int num = atoi(argv[1]);
+    // printf("N=%d\n", num);
+
+    circle(num);
 }
