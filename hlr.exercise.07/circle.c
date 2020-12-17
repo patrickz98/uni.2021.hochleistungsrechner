@@ -11,6 +11,62 @@
 #define TAG_NUMBER_COUNT 3
 #define TAG_PRINT_SYNC   4
 
+void printSynced(int proc, int processes, int *numbers, int bufferSize)
+{
+    MPI_Status status;
+
+    if (proc == 0)
+    {
+        for (int inx = 0; inx < bufferSize; inx++)
+        {
+            int num = numbers[inx];
+
+            if (num >= 0)
+            {
+                printf("%2d ", num);
+            }
+            else
+            {
+                printf("   ");
+            }
+        }
+
+        printf(" | ");
+
+        int l = 1;
+        MPI_Send((void*) &l, 1, MPI_INT, 1, TAG_PRINT_SYNC, MPI_COMM_WORLD);
+
+        return;
+    }
+
+    int l = 0;
+    MPI_Recv((void*) &l, 1, MPI_INT, (proc - 1), TAG_PRINT_SYNC, MPI_COMM_WORLD, &status);
+
+    for (int inx = 0; inx < bufferSize; inx++)
+    {
+        int num = numbers[inx];
+
+        if (num >= 0)
+        {
+            printf("%2d ", num);
+        }
+        else
+        {
+            printf("   ");
+        }
+    }
+
+    if (proc != (processes - 1))
+    {
+        printf(" | ");
+        MPI_Send((void*) &l, 1, MPI_INT, (proc + 1), TAG_PRINT_SYNC, MPI_COMM_WORLD);
+    }
+    else
+    {
+        printf("\n");
+    }
+}
+
 void circle(int num)
 {
     //
@@ -63,10 +119,13 @@ void circle(int num)
     }
 
     // Print out initial array 
-    for (int inx = 0; inx < numberCount; inx++)
-    {
-        printf("[ %d ] --> init: numbers[ %d ] = %d\n", process, inx, numbers[ inx ]);
-    }
+    // for (int inx = 0; inx < numberCount; inx++)
+    // {
+    //     printf("[ %d ] --> init: numbers[ %d ] = %d\n", process, inx, numbers[ inx ]);
+    // }
+
+    if (process == 0) printf("Array befor rotate: ");
+    printSynced(process, processes, numbers, bufferSize);
 
     //
     // Send stop nummber from P0 to last process
@@ -80,7 +139,7 @@ void circle(int num)
 
         int destination = (processes - 1);
         MPI_Send((void*) &numbers[0], 1, MPI_INT, destination, TAG_START_NUMBER, MPI_COMM_WORLD);
-        printf("[ %d ] --> Send: %d\n", process, numbers[0]);
+        // printf("[ %d ] --> Send: %d\n", process, numbers[0]);
     }
 
     int stopNumber = -1;
@@ -94,7 +153,7 @@ void circle(int num)
         //
 
         MPI_Recv(&stopNumber, 1, MPI_INT, 0, TAG_START_NUMBER, MPI_COMM_WORLD, &status);
-        printf("[ %d ] --> Recv: %d\n", process, stopNumber);
+        // printf("[ %d ] --> Recv: %d\n", process, stopNumber);
     }
 
     // Calculate source and destination process number for message exchange
@@ -127,14 +186,17 @@ void circle(int num)
     // Print final array after exchange
     //
 
-    for (int inx = 0; inx < bufferSize; inx++)
-    {
-        int number = numbers[ inx ];
-        if (number >= 0)
-        {
-            printf("[ %d ] --> final: numbers[ %d ] = %d\n", process, inx, number);
-        }
-    }
+    if (process == 0) printf("Array after rotate: ");
+    printSynced(process, processes, numbers, bufferSize);
+
+    // for (int inx = 0; inx < bufferSize; inx++)
+    // {
+    //     int number = numbers[ inx ];
+    //     if (number >= 0)
+    //     {
+    //         printf("[ %d ] --> final: numbers[ %d ] = %d\n", process, inx, number);
+    //     }
+    // }
 
     //
     // MPI clean-up
