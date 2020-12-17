@@ -118,12 +118,7 @@ void circle(int num)
             : -1;
     }
 
-    // Print out initial array 
-    // for (int inx = 0; inx < numberCount; inx++)
-    // {
-    //     printf("[ %d ] --> init: numbers[ %d ] = %d\n", process, inx, numbers[ inx ]);
-    // }
-
+    // Print out initial array
     if (process == 0) printf("Array befor rotate: ");
     printSynced(process, processes, numbers, bufferSize);
 
@@ -188,15 +183,6 @@ void circle(int num)
 
     if (process == 0) printf("Array after rotate: ");
     printSynced(process, processes, numbers, bufferSize);
-
-    // for (int inx = 0; inx < bufferSize; inx++)
-    // {
-    //     int number = numbers[ inx ];
-    //     if (number >= 0)
-    //     {
-    //         printf("[ %d ] --> final: numbers[ %d ] = %d\n", process, inx, number);
-    //     }
-    // }
 
     //
     // MPI clean-up
