@@ -104,7 +104,8 @@ void circle(int num)
         numberCount++;
     }
 
-    int numbers[bufferSize];
+    // Put numbers on the heap
+    int *numbers = malloc(sizeof(int) * bufferSize);
 
     // Init "random" with seed
     srand(28051998 * process);
@@ -116,6 +117,29 @@ void circle(int num)
         numbers[ inx ] = (inx < numberCount)
             ? rand() % 25
             : -1;
+    }
+
+    // Check for only one process
+    if (processes <= 1)
+    {
+        printf("Array befor and after rotate: ");
+
+        for (int inx = 0; inx < bufferSize; inx++)
+        {
+            int number = numbers[ inx ];
+
+            if (number >= 0)
+            {
+                printf("%2d ", number);
+            }
+        }
+
+        printf("\n");
+
+        MPI_Finalize();
+        free(numbers);
+
+        return;
     }
 
     // Print out initial array
@@ -155,17 +179,16 @@ void circle(int num)
     int source      = (process + processes - 1) % processes;
     int destination = (process + processes + 1) % processes;
 
-    // printf("[ %d ] --> source: %d, destination: %d\n", process, source, destination);
-
     //
     // Send and receive number array
     //
 
+    int iterations = 0;
     int exit = 0;
     while (exit == 0)
     {
-        MPI_Send((void*) &numbers, bufferSize, MPI_INT, destination, TAG_SEND_NUMBERS, MPI_COMM_WORLD);
-        MPI_Recv(        &numbers, bufferSize, MPI_INT,      source, TAG_SEND_NUMBERS, MPI_COMM_WORLD, &status);
+        MPI_Send((void*) numbers, bufferSize, MPI_INT, destination, TAG_SEND_NUMBERS, MPI_COMM_WORLD);
+        MPI_Recv(        numbers, bufferSize, MPI_INT,      source, TAG_SEND_NUMBERS, MPI_COMM_WORLD, &status);
 
         if (isLastProc)
         {
@@ -175,6 +198,7 @@ void circle(int num)
 
         // Brodcast termination
         MPI_Bcast((void*) &exit, 1, MPI_INT, brodcastRoot, MPI_COMM_WORLD);
+        iterations++;
     }
 
     //
@@ -189,6 +213,10 @@ void circle(int num)
     //
 
     MPI_Barrier(MPI_COMM_WORLD);
+
+    if (process == 0) printf("Iterations: %d\n", iterations);
+    free(numbers);
+
     MPI_Finalize();
 }
 
