@@ -552,7 +552,7 @@ calculate_parallel (struct calculation_arguments const* arguments, struct calcul
 
 		results->stat_iteration++;
 
-        if(rang == 0)
+        if (rang == 0)
         {
             /*Prozess sendet seine letzte bearbeitete Zeile (nichtblockierend) an den nächsthöheren Prozess*/
             MPI_Isend((void*) &Matrix_Out[arguments->rows - 2][0], N + 1, MPI_DOUBLE, rang + 1, rang + 1, MPI_COMM_WORLD, &request_f);
@@ -563,7 +563,7 @@ calculate_parallel (struct calculation_arguments const* arguments, struct calcul
             /*Prozess wartet auf das erfolgreiche Versenden seiner letzten bearbeiteten Zeile*/
             MPI_Wait(&request_f, &status_sendl);
         }
-        else if(rang == arguments->comm_size - 1)
+        else if (rang == arguments->comm_size - 1)
         {
             /*Prozess  sendet seine erste bearbeitete Zeile (nichtblockierend) an den vorherigen Prozess*/
             MPI_Isend((void*) &Matrix_Out[1][0], N + 1, MPI_DOUBLE, rang - 1, rang - 1, MPI_COMM_WORLD, &request_l);

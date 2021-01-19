@@ -1,5 +1,5 @@
 # Common definitions
-CC = gcc
+CC = mpicc
 
 # Compiler flags, paths and libraries
 CFLAGS = -std=c11 -pedantic -Wall -Wextra -O3 -ggdb
@@ -26,3 +26,10 @@ askparams.o: askparams.c Makefile
 clean:
 	$(RM) $(OBJS)
 	$(RM) $(TGTS)
+
+run: clean all
+	mpirun -n 4 ./partdiff 1 1 64 1 2 8000
+	# Referance f1
+	# mpirun -n 4 ./partdiff 1 1 0 1 2 47
+	# Referance f2
+	# mpirun -n 4 ./partdiff 1 1 0 2 2 48
