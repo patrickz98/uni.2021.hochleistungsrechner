@@ -1,0 +1,24 @@
+Die Bearbeitungszeit bitte in ganzen Stunden angeben (aufrunden).
+In den restlichen Zeilen jeweils ein X in der zutreffenden Spalte setzen.
+
+Bearbeitungszeit:  25
+Schwierigkeit:     [ ] zu leicht         [ ] genau richtig     [x]sehr anspruchsvoll     [ ] zu schwer
+Lehrreich:         [ ] wenig             [x] etwas             [ ] sehr
+VerstÃ¤ndlichkeit:  [ ] groÃŸteils unklar  [x] teilweise unklar  [ ] verstÃ¤ndlich
+
+Kommentar:
+
+Zeitaufwand zu groÃŸ? Wo sind Sie nicht weiter gekommen?
+Ein gewisser Aufwand ist bei einem Projekt dieser Größe zu erwarten, vor allem da wir 2 Wochen Bearbeitungszeit hatten. 
+Allerdings war es ziemlich anstrengend die Zeilenaufteilung zu debuggen, nachdem wir sie schon für Jacobi verwendet hatten. Hier wäre es besser gewesen eine Vorlage zu bekommen, eben weil die Aufteilung schon bei Jacobi korrigiert und bewertet wurde.
+
+Was war zu schwer oder unverstÃ¤ndlich?
+Es gab einige Unklarheiten was Isend, Send und Ssend betrifft.
+Die generelle Funktion der Befehle war klar, allerdings waren die Kommentare/Hinweise teilweise eher hinderlich (zB dass alle Send mit Ssend ersetzt werden um es auf Deadlocks zu testen -> lange war unklar ob auch Isend gemeint war). 
+
+Was kÃ¶nnten wir verbessern?
+Besser Kommunizieren wie getestet wird und was das Programm am Ende können muss.
+Hinweise dazu in einer E-Mail am 21. zu erhalten könnte etwas knapp sein (auch wenn es bei uns dahingehend nichts zu verändern gab).
+
+Was hat Ihnen besonders gut gefallen?
+Das Verknüpfen der vorherigen Übungen zu einem großen Projekt.
